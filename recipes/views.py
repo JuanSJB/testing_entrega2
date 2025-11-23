@@ -474,14 +474,18 @@ def recibir_json_pdf(request):
 
 
 def ver_historial(request):
-    """
-    Muestra los últimos 10 JSON almacenados.
-    """
-    historial = JsonHistory.objects.all()[:10]
-    return JsonResponse({
-        "cantidad": len(historial),
-        "data": [h.content for h in historial]
-    })
+
+    historial_objects = JsonHistory.objects.all().order_by('-id')[:10]
+    
+    # Prepara el contexto para el template
+    context = {
+        # Pasa los objetos del ORM al template
+        "historial_data": historial_objects, 
+        "cantidad": len(historial_objects)
+    }
+    
+    # ⚠️ Renderiza el template HTML
+    return render(request, 'equipo_precedente/ver_historial.html', context)
 
 
 
