@@ -1,0 +1,26 @@
+name: Build and Push Cocina360 Image
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Docker Login
+      env:
+        DOCKER_USER: ${{ secrets.DOCKERHUB_USER }}
+        DOCKER_PASS: ${{ secrets.DOCKERHUB_PASS }}
+      run: |
+        docker login -u $DOCKER_USER -p $DOCKER_PASS
+
+    - name: Build Docker image
+      run: docker build . --file Dockerfile --tag juansejb/cocina360:latest
+
+    - name: Push Docker image
+      run: docker push juansejb/cocina360
