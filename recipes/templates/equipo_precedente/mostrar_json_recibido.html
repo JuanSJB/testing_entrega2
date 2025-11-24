@@ -1,21 +1,27 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <style>
-        /* ... (tus estilos existentes) ... */
-        
-        /* Estilo para el botón de descarga (azul, por ejemplo) */
-        .download-button { 
-            background:#337ab7; 
-            margin-left: 15px; 
-            padding:10px 20px;
-            color:white;
-            border-radius:8px;
-            text-decoration:none;
-            font-weight:bold;
+        .download-button {
+            background: #ff9800;
+            ;
+            margin-left: 15px;
+            padding: 10px 20px;
+            color: white;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .orange-link {
+            color: #ff9800;
+            text-decoration: none;
+            font-weight: bold;
         }
     </style>
 </head>
+
 <body>
 
     <h1>✅ JSON Recibido #{{ id }}</h1>
@@ -23,15 +29,15 @@
     <pre>{{ json_data|safe }}</pre>
 
     <div>
-        <a href="{% url 'enviar_receta' %}">⬅ Volver a enviar más JSON</a>
+        <a href="{% url 'enviar_receta' %}" class="orange-link">⬅ Volver a enviar más JSON</a>
 
-        <a href="{% url 'ver_historial_json' %}">⬅ Ver historial</a>
+        <a href="{% url 'ver_historial_json' %}"class="orange-link">⬅ Ver historial</a>
         
         <a href="{% url 'descargar_json_pdf' id=id %}" class="download-button" target="_blank">
             ⬇ Descargar como PDF
         </a>
-        </a>
     </div>
 
 </body>
+
 </html>
