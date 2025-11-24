@@ -11,7 +11,7 @@ from django.db.models import Q
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib import messages
 from .models import Recipe, Ingredient, Step, JsonHistory 
-from openai import OpenAI, APIError, AuthenticationError, RateLimitError
+from openai import OpenAI
 from .ai_assistant import suggest_substitution
 from .forms import RecipeForm
 from django.http import HttpResponseForbidden
@@ -27,7 +27,7 @@ from django.conf import settings
 from io import BytesIO
 from django.template.loader import render_to_string
 from .report_generators import PdfRecipeReportGenerator, RecipeReportService
-from .ai_assistant import CLIENT 
+
 
 def recipe_list(request):
     query = request.GET.get("q", "")  # lo que viene del buscador superior
@@ -344,13 +344,17 @@ client = None
 if api_key:
     client = OpenAI(api_key=api_key)
 
-
-
 @csrf_exempt
 @require_POST
 def recipe_chat(request):
     """
     Chat general sobre la receta actual.
+
+    Espera JSON:
+      { "message": "texto del usuario", "recipe_id": 1 }
+
+    Responde JSON:
+      { "reply": "texto de la IA" }
     """
     try:
         data = json.loads(request.body.decode("utf-8"))
@@ -376,11 +380,26 @@ def recipe_chat(request):
     prompt = f"""
 Eres un asistente de cocina amable y experto.
 El usuario está viendo esta receta de Cocina360 y te hará preguntas sobre ella.
-... (código del prompt completo) ...
+
+Receta:
+Nombre: {recipe.name}
+Ingredientes: {ingredientes_txt}
+Pasos:
+{pasos_txt}
+
+Reglas:
+- Responde SIEMPRE en español.
+- Sé breve y claro (3–6 líneas).
+- Puedes dar consejos adicionales (textura, sabor, tiempos, seguridad).
+- Si el usuario pide sustituir algo, explica riesgos y proporciones.
+- Si la pregunta no tiene que ver con la receta, responde de forma educada pero vuelve al tema de la receta.
+
+Pregunta del usuario: {message}
+Responde de forma directa, como si estuvieras hablando con la persona.
 """
 
-    # ⚠️ Usamos el CLIENTE global importado
-    if CLIENT is None:
+        # Si no hay cliente, usa modo sin IA
+    if client is None:
         reply_text = (
             "⚠️ Modo sin IA activado.\n"
             "No hay API key configurada, por lo que responderé con mensajes básicos.\n\n"
@@ -389,27 +408,21 @@ El usuario está viendo esta receta de Cocina360 y te hará preguntas sobre ella
         )
     else:
         try:
-            # ⚠️ Usamos CLIENT en la llamada
-            response = CLIENT.responses.create(
+            response = client.responses.create(
                 model="gpt-5-nano",
                 input=prompt,
                 store=False
             )
             reply_text = response.output_text
-        except AuthenticationError as e:
-            # Captura error de clave inválida
-            reply_text = f"❌ Error 401: Clave API inválida. Por favor, revisa la configuración. Detalle: {e.code}"
-        except RateLimitError as e:
-            # Captura error de límite de llamadas
-            reply_text = f"❌ Error 429: Límite de llamadas excedido. Detalle: {e.code}"
-        except APIError as e:
-            # Captura otros errores de la API (servidor, modelo, etc.)
-            reply_text = f"❌ Error de la API ({e.status_code}): El servicio de IA falló. Detalle: {e}"
         except Exception as e:
-            # Captura errores generales (ej. problema de red)
-            reply_text = f"❌ Error de conexión desconocido. Detalle: {type(e).__name__}: {str(e)}"
+            reply_text = (
+                "⚠️ Error consultando la IA.\n"
+                "Por ahora usaré el modo sin IA.\n"
+                f"Detalle: {e}"
+            )
 
-    return JsonResponse({"reply": reply_text})
+
+    return JsonResponse({"reply": reply_text})  
 
 from django.contrib.admin.views.decorators import staff_member_required
 
