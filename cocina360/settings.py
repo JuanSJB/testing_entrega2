@@ -12,7 +12,18 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 import os
 from pathlib import Path
 from dotenv import load_dotenv
-load_dotenv("key.env")
+
+
+# Usar Docker Secrets si existen
+secret_file = "/run/secrets/openai_key"
+
+if os.path.exists(secret_file):
+    print("🔐 Cargando secretos desde Docker Swarm...")
+    load_dotenv(secret_file)
+else:
+    print("📁 Cargando variables desde key.env local...")
+    load_dotenv("key.env")
+
 USE_I18N = True
 LANGUAGE_CODE = 'es'
 load_dotenv()
